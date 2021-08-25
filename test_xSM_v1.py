@@ -59,7 +59,7 @@ class model(generic_potential.generic_potential):
         mwl = 0.25 * self.Y1 ** 2. * h ** 2. + ringwl
         mwt = 0.25 * self.Y1 ** 2. * h ** 2.
 
-        mzgla = 0.25 * self.Y1 ** 2. * h ** 2. + ringwl  # don't konw why
+        mzgla = 0.25 * self.Y1 ** 2. * h ** 2. + ringwl  # this is the themal mass of Z boson, see arXiv:1507.06912v2
         mzglb = 0.25 * self.Y2 ** 2. * h ** 2. + ringbl
         mzgc = - 0.25 * self.Y1 * self.Y2 * h ** 2.
         mzglA = .5 * (mzgla + mzglb)
@@ -72,7 +72,7 @@ class model(generic_potential.generic_potential):
 
         mzl = mzglA + mzglB
         mzt = mzgtA + mzgtB
-        mgl = mzglA - mzglB
+        mgl = mzglA - mzglB #this is the photon
         mgt = mzgtA - mzgtB
 
         mx = -self.mu_h_sq + self.lamda_h * h ** 2. + 0.5 * self.lamda_hs * s ** 2. + ringchi
@@ -80,7 +80,7 @@ class model(generic_potential.generic_potential):
             M = np.array([mh, ms, mwl, mwt, mzl, mzt])
             M = np.rollaxis(M, 0, len(M.shape))
             dof = np.array([1, 1, self.dof_wl, self.dof_wt, self.dof_zl, self.dof_zt])  ###do not consider the goldstone now!!
-            c = np.array([1.5, 1.5, 5. / 6., 5. / 6., 5. / 6., 5. / 6.])  # check Goldstones
+            c = np.array([1.5, 1.5, 1.5, 1.5, 1.5, 1.5])  # check Goldstones
         else:
             M = np.array([mh, ms, mwl, mwt, mzl, mzt, mgl, mgt, mx])
             M = np.rollaxis(M, 0, len(M.shape))
@@ -114,7 +114,7 @@ class model(generic_potential.generic_potential):
     def V1_onshell(self, bosons, fermions):  # on shell
         m2, n, c = bosons
         y = np.sum(n * (m2 * m2 * (np.log(np.abs(m2 / self.Mass_boson_vev[0]) + 1e-100)
-                                   - 1.5) + 2 * m2 * self.Mass_boson_vev[0]), axis=-1)
+                                   - c) + 2 * m2 * self.Mass_boson_vev[0]), axis=-1)
         m2, n = fermions
         y -= np.sum(n * (m2 * m2 * (np.log(np.abs(m2 / self.Mass_fermi_vev[0]) + 1e-100)
                                     - 1.5) + 2 * m2 * self.Mass_fermi_vev[0]), axis=-1)
@@ -154,22 +154,22 @@ class model(generic_potential.generic_potential):
             Tnuc_highvev = self.TnTrans[0]['high_vev']
             ###### Tcrit highvev
             dvdt = (self.Vtot(Tcrit_highvev, Tcrit + dt) - self.Vtot(Tcrit_highvev, Tcrit - dt)) / (2 * dt)
-            # dvdphi = self.gradV(Tcrit_highvev, Tcrit)
-            # dphidt = -1 * self.dgradV_dT(Tcrit_highvev, Tcrit)/self.d2V(Tcrit_highvev, Tcrit)   #self.d2V equal 0
-            #S_crit_highvev = -(dvdt + dphidt * dvdphi)
-            S_crit_highvev = -(dvdt)
+            dvdphi = self.gradV(Tcrit_highvev, Tcrit)
+            dphidt = np.matmul(np.linalg.inv(self.d2V(Tcrit_highvev, Tcrit)), -1 * self.dgradV_dT(Tcrit_highvev, Tcrit))   #self.d2V equal 0
+            S_crit_highvev = -(dvdt + np.sum(dphidt * dvdphi))
+
 
             ###### Tcrit lowvev
             dvdt = (self.Vtot(Tcrit_lowvev, Tcrit + dt) - self.Vtot(Tcrit_lowvev, Tcrit - dt)) / (2 * dt)
-            # dvdphi = self.gradV(Tcrit_lowvev, Tcrit)
-            # dphidt = -1 * self.dgradV_dT(Tcrit_lowvev, Tcrit) / self.d2V(Tcrit_lowvev, Tcrit)
-            #S_crit_lowvev = -(dvdt + dphidt * dvdphi)
-            S_crit_lowvev = -(dvdt)
+            dvdphi = self.gradV(Tcrit_lowvev, Tcrit)
+            dphidt = np.matmul(np.linalg.inv(self.d2V(Tcrit_lowvev, Tcrit)), -1 * self.dgradV_dT(Tcrit_lowvev, Tcrit))
+            S_crit_lowvev = -(dvdt + np.sum(dphidt * dvdphi))
+
 
             #####Tnul high vev
             dvdt = (self.Vtot(Tnuc_highvev, Tnuc + dt) - self.Vtot(Tnuc_highvev, Tnuc - dt)) / (2 * dt)
             dvdphi = self.gradV(Tnuc_highvev, Tnuc)
-            dphidt = -1 * self.dgradV_dT(Tnuc_highvev, Tnuc) / self.d2V(Tnuc_highvev, Tnuc)
+            dphidt = np.matmul(np.linalg.inv(self.d2V(Tnuc_highvev, Tnuc)), -1 * self.dgradV_dT(Tnuc_highvev, Tnuc))
             S_nuc_highvev = -(dvdt + np.sum(dphidt * dvdphi))
 
             entropy = [S_crit_highvev, S_crit_lowvev, S_nuc_highvev]
@@ -187,7 +187,7 @@ class model(generic_potential.generic_potential):
             Tnuc_highvev = self.TnTrans[0]['high_vev']
             entropy = self.entropy(dt, dphi)
             if (Tcrit - Tnuc) < 2:
-                print('condition one')
+                #print('condition one')
                 dilution_factor = entropy[0] / entropy[1]
             else:
                 L = self.energyDensity(Tcrit_highvev, Tcrit) - self.energyDensity(Tcrit_lowvev,Tcrit)
@@ -196,9 +196,4 @@ class model(generic_potential.generic_potential):
                 dilution_factor = (1 - f * (entropy[0] - entropy[1]) / entropy[0]) * entropy[0] / (
                             (1 - (entropy[0] - entropy[1]) / entropy[0]) * entropy[2])
         return dilution_factor
-
-model = model(1, 4, 80, False)
-model.findAllTransitions()
-#model.prettyPrintTnTrans()
-print(model.dilution_factor(1e-6,1e-6))
 
