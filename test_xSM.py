@@ -7,29 +7,29 @@ class model(generic_potential.generic_potential):
     def init(self, lamda_hs, lamda_s, ms, RG_flag):
         self.Ndim = 2
         self.RG_onshell_method = RG_flag
-        self.renormScaleSq = 1000
-        self.vev_higgs_sq = 246 ** 2
-        self.mh_sq = 125 ** 2
+        self.renormScaleSq = 1000.
+        self.vev_higgs_sq = 246. ** 2
+        self.mh_sq = 125. ** 2
         self.ms_sq = ms ** 2
         self.lamda_hs = lamda_hs
         self.lamda_s = lamda_s
         ####calculated by the above parameters
-        self.mu_h_sq = self.mh_sq / 2
-        self.mu_s_sq = -1 * self.ms_sq + self.lamda_hs * self.vev_higgs_sq / 2
-        self.lamda_h = self.mh_sq / (2 * self.vev_higgs_sq)
+        self.mu_h_sq = 0.5*self.mh_sq
+        self.mu_s_sq = -self.ms_sq + 0.5*self.lamda_hs * self.vev_higgs_sq
+        self.lamda_h = 0.5*self.mh_sq/self.vev_higgs_sq
         ####degree of particle
-        self.dof_wt = 4
-        self.dof_wl = 2
-        self.dof_zt = 2
-        self.dof_zl = 1
-        self.dof_t = 12
-        self.dof_goldstone = 3
+        self.dof_wt = 4.
+        self.dof_wl = 2.
+        self.dof_zt = 2.
+        self.dof_zl = 1.
+        self.dof_t = 12.
+        self.dof_goldstone = 3.
         ######coupling constant
-        self.Y1 = 2 * 80.4 / 246  # g
-        self.Y2 = 2 * (91.2 ** 2 - 80.4 ** 2) ** 0.5 / 246  # g'
-        self.Yt = 2 ** 0.5 * 172.4 / 246  # just curious about 1/6, yukawa top
-        self.Mass_boson_vev = self.boson_massSq([246, 0], 0)
-        self.Mass_fermi_vev = self.fermion_massSq([246, 0])
+        self.Y1 = 2. * 80.4 / 246.  # g
+        self.Y2 = 2. * (91.2 ** 2 - 80.4 ** 2) ** 0.5 / 246.  # g'
+        self.Yt = 2. ** 0.5 * 172.4 / 246.  # just curious about 1/6, yukawa top
+        self.Mass_boson_vev = self.boson_massSq([246., 0], 0.)
+        self.Mass_fermi_vev = self.fermion_massSq([246., 0])
 
     def forbidPhaseCrit(self, X):
         return any([np.array([X])[..., 0] < -5.0, np.array([X])[..., 1] < -5.0])
@@ -54,8 +54,8 @@ class model(generic_potential.generic_potential):
         ringbl = 11. * self.Y2 ** 2. * T ** 2. * h ** 0. / 6.
         ringchi = (3. * self.Y1 ** 2. / 16. + self.Y2 ** 2. / 16. + self.lamda_h / 2. + self.Yt ** 2. / 4. + self.lamda_hs / 12.) * T ** 2. * h ** 0.
 
-        mh = 2 * h **2 * self.lamda_h + ringh  # note, this is mh_sq, same for below
-        ms = -1 * self.mu_s_sq + self.lamda_hs * h**2 / 2 + rings
+        mh = -self.mu_h_sq + 3.*self.lamda_h*h**2 + 0.5*self.lamda_hs*s**2 + ringh
+        ms = -self.mu_s_sq + 3.*self.lamda_s*s**2 + 0.5*self.lamda_hs*h**2 + rings
 
         mwl = 0.25 * self.Y1 ** 2. * h ** 2. + ringwl
         mwt = 0.25 * self.Y1 ** 2. * h ** 2.
@@ -120,7 +120,7 @@ class model(generic_potential.generic_potential):
                                     - 1.5) + 2 * m2 * self.Mass_fermi_vev[0]), axis=-1)
         return y / (64. * np.pi * np.pi)
 
-    def Vtot(self, X, T, include_radiation=True):
+    def Vtot(self, X, T, include_radiation=False):
         T = np.asanyarray(T, dtype=float)
         X = np.asanyarray(X, dtype=float)
         bosons = self.boson_massSq(X, T)
@@ -131,6 +131,9 @@ class model(generic_potential.generic_potential):
         else:
             y += self.V1_MS(bosons, fermions)
         y += self.V1T(bosons, fermions, T, include_radiation)
+        
+        print("V1T = ", self.V1T(bosons, fermions, T, include_radiation))
+        
         return y
 
     def select_Tc(self):
@@ -242,17 +245,30 @@ class model(generic_potential.generic_potential):
             **tracingArgs_)
         self.phases = phases
         transitionFinder.removeRedundantPhases(
-            self.Vtot, phases, self.x_eps*1e-2, self.x_eps*10)  #可以考虑注释掉
+            self.Vtot, phases, self.x_eps*1e-2, self.x_eps*10) 
         return self.phases
 
 
 
-#model = model(0.479, 0.3, 60, True)
+#model = model(0.25, 0.1, 60, True)
 
-# model = model(8.96, 1, 530, True)
-# model.findAllTransitions()
-# print(model.TcTrans)
-# print(model.TnTrans)
+##model = model(8.96, 1, 530, True)
+
+#xx = [246., 0.]
+#print("lamda_s = ", model.lamda_s)
+#print("lamda_h = ", model.lamda_h)
+#print("lamda_hs = ", model.lamda_hs)
+#print("mu_h_sq = ", model.mu_h_sq)
+#print("mu_s_sq = ", model.mu_s_sq)
+#print("fermion_massSq = ", np.sqrt(model.fermion_massSq(xx)[0]))
+#print("boson_massSq = ", np.sqrt(model.boson_massSq(xx,100.)[0]))
+#print("V0 = ", model.V0(xx))
+#model.Vtot(xx,100.)
+
+#model.findAllTransitions()
+#print(model.TcTrans)
+#print(model.TnTrans)
+
 # # # # print(model.TnTrans[1]['action'])
 # # print('Tc', model.TcTrans[model.select_Tc()]['Tcrit'])
 # # print('Tn', model.TnTrans[model.select_Tn()]['Tnuc'])
