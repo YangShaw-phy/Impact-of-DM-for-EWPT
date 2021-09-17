@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <cstdlib>
 
 #include "xSM.hpp"
 #include "phase_finder.hpp"
@@ -19,49 +20,12 @@
 #include "phase_plotter.hpp"
 #include "thermal_function.hpp"
 
-std::string toString(std::vector<double> in, std::vector<double> out) {
+std::string run(double ms, double lambda_s, double lambda_hs, bool debug_mode = false) {
   std::stringstream data_str;
-  for (auto i : in    ) data_str << i << "\t";
-  for (auto i : out   ) data_str << i << "\t";
-  return data_str.str();;
-}
 
-int main(int argc, char* argv[]) {
-
-  std::ofstream output_file;  
-  output_file.open("output.txt");
-
-  bool debug_mode = false;
-  double ms, lambda_s, lambda_hs;
-  
-  if ( argc == 1 ) {
-    debug_mode = true;
-    lambda_hs = 0.25;
-    ms = 65;
-    lambda_s =  0.1;
-  } else if ( argc >= 4 ) {
-    ms = atof(argv[1]);
-    lambda_s = atof(argv[2]);
-    lambda_hs = atof(argv[3]);
-  } else {
-    std::cout << "Use ./run_xSM_OSlike ms lambda_s lambda_hs" << std::endl;
-    return 0;
-  }
-
-  if (debug_mode){
-    LOGGER(debug);
-    std::cout << "ms = " << ms << std::endl
-              << "lambda_s = " << lambda_s << std::endl
-              << "lambda_hs = " << lambda_hs << std::endl;
-
-  } else {
-    LOGGER(fatal);
-  }
-  
   // Construct our model
   EffectivePotential::xSM_OSlike model(lambda_hs, lambda_s, ms);
   model.set_daisy_method(EffectivePotential::DaisyMethod::Parwani);
-  std::vector<double> in ={ms, lambda_s, lambda_hs};
   
   if (debug_mode) {
       Eigen::VectorXd x(2);
@@ -97,13 +61,7 @@ int main(int argc, char* argv[]) {
   try {
     pf.find_phases();
   } catch (...) {
-    std::cout << "ms = " << ms << ",\t"
-              << "lambda_s = " << lambda_s << ",\t"
-              << "lambda_hs = " << lambda_hs << "\t"
-              << "encounters bug!" << std::endl;
-    std::vector<double> out = {-1, 0, 0, 0, 0, 0};
-    output_file << toString(in, out) << std::endl;
-    return 0;
+    return data_str.str();
   }
   if (debug_mode) std::cout << pf;
 
@@ -114,13 +72,7 @@ int main(int argc, char* argv[]) {
     
   auto t = tf.get_transitions();
   if (t.size()==0){
-    std::cout << "ms = " << ms << ",\t"
-              << "lambda_s = " << lambda_s << ",\t"
-              << "lambda_hs = " << lambda_hs << "\t"
-              << "found 0 transition!" << std::endl;
-    std::vector<double> out = {-2, 0, 0, 0, 0, 0};
-    output_file << toString(in, out) << std::endl;
-    return 0;
+    return data_str.str();
   }
   
   // Find the transition with largest gamma from (0,vs) -> (vh,0)
@@ -135,14 +87,54 @@ int main(int argc, char* argv[]) {
   }
   
   if (jj<0) {
-    std::vector<double> out = {-3, 0, 0, 0, 0, 0};
-    output_file << toString(in, out) << std::endl;
-    return 0;
+    return data_str.str();
   }
   
   std::vector<double> out = {(float)t.size(), t[jj].TC, t[jj].true_vacuum[0], t[jj].true_vacuum[1], t[jj].false_vacuum[0], t[jj].false_vacuum[1]};
   
-  output_file << toString(in, out) << std::endl;
-  output_file.close();  
-  return 0;
+  data_str << ms << "\t" << lambda_s << "\t" << lambda_hs << "\t";
+  for (auto i : out   ) data_str << i << "\t"; 
+  data_str << std::endl;
+  return data_str.str();
 }
+
+
+int main(int argc, char* argv[]) {
+
+    if ( argc == 1 ) {
+      LOGGER(debug);
+      double lambda_hs = 0.25;
+      double ms = 65;
+      double lambda_s =  0.1;
+      std::cout << "ms = " << ms << std::endl
+                << "lambda_s = " << lambda_s << std::endl
+                << "lambda_hs = " << lambda_hs << std::endl;
+      run(ms, lambda_s, lambda_hs, true);
+    } else {
+      int num = atoi(argv[1]);
+      LOGGER(fatal);
+      std::ofstream output_file;  
+      output_file.open("output.txt");
+//      std::srand(1);
+      std::vector<double> lhs = {0.2, 3};
+      std::vector<double> ls = {0.05, 0.15};
+      std::vector<double> ms = {60, 70};
+      
+      double RMAX = (double)RAND_MAX;
+      for (int ii=0; ii<num; ii++) {
+        double lambda_hs = rand()/RMAX * (lhs[1] - lhs[0]) + lhs[0];
+        double m_s = rand()/RMAX * (ms[1] - ms[0]) + ms[0];
+        double lambda_s =  rand()/RAND_MAX * (ls[1] - ls[0]) + ls[0];
+        std::cout << "ms = " << m_s << std::endl
+                  << "lambda_s = " << lambda_s << std::endl
+                  << "lambda_hs = " << lambda_hs << std::endl;
+        output_file << run(m_s, lambda_s, lambda_hs, false);
+      }
+      output_file.close();  
+    }
+
+
+}
+
+
+
