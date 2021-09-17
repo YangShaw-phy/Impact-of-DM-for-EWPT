@@ -48,14 +48,20 @@ class model(generic_potential.generic_potential):
     def boson_massSq(self, X, T):
         X = np.array(X)
         h, s = X[..., 0], X[..., 1]
-        ringh = (3. * self.Y1 ** 2. / 16. + self.Y2 ** 2. / 16. + self.lamda_h / 2 + self.Yt ** 2. / 4. + self.lamda_hs / 12.) * T ** 2. * h ** 0.
-        rings = (self.lamda_s / 4. + self.lamda_hs / 3.) * T ** 2. * h ** 0.
-        ringwl = 11. * self.Y1 ** 2. * T ** 2. * h ** 0. / 6.
-        ringbl = 11. * self.Y2 ** 2. * T ** 2. * h ** 0. / 6.
-        ringchi = (3. * self.Y1 ** 2. / 16. + self.Y2 ** 2. / 16. + self.lamda_h / 2. + self.Yt ** 2. / 4. + self.lamda_hs / 12.) * T ** 2. * h ** 0.
+        ringh = (3. * self.Y1 ** 2. / 16. + self.Y2 ** 2. / 16. + self.lamda_h / 2 + self.Yt ** 2. / 4. + self.lamda_hs / 24.) * T ** 2.
+        rings = (self.lamda_s / 4. + self.lamda_hs / 6.) * T ** 2.
+        ringwl = 11. * self.Y1 ** 2. * T ** 2. / 6.
+        ringbl = 11. * self.Y2 ** 2. * T ** 2. / 6.
+        ringchi = (3. * self.Y1 ** 2. / 16. + self.Y2 ** 2. / 16. + self.lamda_h / 2. + self.Yt ** 2. / 4. + self.lamda_hs / 12.) * T ** 2.
 
-        mh = -self.mu_h_sq + 3.*self.lamda_h*h**2 + 0.5*self.lamda_hs*s**2 + ringh
-        ms = -self.mu_s_sq + 3.*self.lamda_s*s**2 + 0.5*self.lamda_hs*h**2 + rings
+        mhh = -self.mu_h_sq + 3.*self.lamda_h*h**2 + 0.5*self.lamda_hs*s**2 + ringh
+        mss = -self.mu_s_sq + 3.*self.lamda_s*s**2 + 0.5*self.lamda_hs*h**2 + rings
+        mhs = self.lamda_hs*h*s;
+        mhA = 0.5*(mhh+mss)
+        mhB = np.sqrt(0.25*(mhh-mss)**2 + mhs**2);
+        
+        mh = mhA+mhB
+        ms = mhA-mhB       
 
         mwl = 0.25 * self.Y1 ** 2. * h ** 2. + ringwl
         mwt = 0.25 * self.Y1 ** 2. * h ** 2.
@@ -132,7 +138,8 @@ class model(generic_potential.generic_potential):
             y += self.V1_MS(bosons, fermions)
         y += self.V1T(bosons, fermions, T, include_radiation)
         
-        print("V1T = ", self.V1T(bosons, fermions, T, include_radiation))
+#        print("V1 = ", self.V1_onshell(bosons, fermions))
+#        print("V1T = ", self.V1T(bosons, fermions, T, include_radiation))
         
         return y
 
@@ -250,11 +257,12 @@ class model(generic_potential.generic_potential):
 
 
 
-#model = model(0.25, 0.1, 60, True)
+model = model(0.25, 0.1, 65, True)
 
 ##model = model(8.96, 1, 530, True)
 
-#xx = [246., 0.]
+#xx = [246., 100.]
+#print("g' = ", model.Y2)
 #print("lamda_s = ", model.lamda_s)
 #print("lamda_h = ", model.lamda_h)
 #print("lamda_hs = ", model.lamda_hs)
@@ -263,11 +271,11 @@ class model(generic_potential.generic_potential):
 #print("fermion_massSq = ", np.sqrt(model.fermion_massSq(xx)[0]))
 #print("boson_massSq = ", np.sqrt(model.boson_massSq(xx,100.)[0]))
 #print("V0 = ", model.V0(xx))
-#model.Vtot(xx,100.)
+#print("VT = ", model.Vtot(xx,100.))
 
-#model.findAllTransitions()
-#print(model.TcTrans)
-#print(model.TnTrans)
+model.findAllTransitions()
+print(model.TcTrans)
+print(model.TnTrans)
 
 # # # # print(model.TnTrans[1]['action'])
 # # print('Tc', model.TcTrans[model.select_Tc()]['Tcrit'])
