@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
-#include <cstdlib>
+#include <random>
 
 #include "xSM.hpp"
 #include "phase_finder.hpp"
@@ -115,19 +115,22 @@ int main(int argc, char* argv[]) {
       LOGGER(fatal);
       std::ofstream output_file;  
       output_file.open("output.txt");
-//      std::srand(1);
-      std::vector<double> lhs = {0.2, 3};
-      std::vector<double> ls = {0.05, 0.15};
-      std::vector<double> ms = {60, 70};
+
+      std::random_device rd;
+      std::default_random_engine eng(rd());
+      std::uniform_real_distribution<double> lhs(0.1, 10);
+      std::uniform_real_distribution<double> ls(0.01, 1);
+      std::uniform_real_distribution<double> ms(10, 600);
       
       double RMAX = (double)RAND_MAX;
       for (int ii=0; ii<num; ii++) {
-        double lambda_hs = rand()/RMAX * (lhs[1] - lhs[0]) + lhs[0];
-        double m_s = rand()/RMAX * (ms[1] - ms[0]) + ms[0];
-        double lambda_s =  rand()/RAND_MAX * (ls[1] - ls[0]) + ls[0];
-        std::cout << "ms = " << m_s << std::endl
-                  << "lambda_s = " << lambda_s << std::endl
-                  << "lambda_hs = " << lambda_hs << std::endl;
+        double lambda_hs = lhs(eng);
+        double m_s = ms(eng);
+        double lambda_s =  ls(eng);
+        std::cout << ii 
+                  << ", ms = " << m_s
+                  << ", lambda_s = " << lambda_s
+                  << ", lambda_hs = " << lambda_hs << std::endl;
         output_file << run(m_s, lambda_s, lambda_hs, false);
       }
       output_file.close();  
