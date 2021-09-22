@@ -47,6 +47,10 @@ class xSM_OSlike : public OneLoopPotential {
     lambda_hs(lambda_hs_), lambda_s(lambda_s_), ms(ms_){
     mus_sq = square(ms) - 0.5*lambda_hs * square(v);
     
+    Eigen::VectorXd EW_VEV(2);
+    EW_VEV <<  v, 0.;
+    scalar_masses_sq_EW = get_scalar_debye_sq(EW_VEV, 0, 0);
+    
 //    std::cout << "lambda_s = " << lambda_s << std::endl;
 //    std::cout << "lambda_h = " << lambda_h << std::endl;
 //    std::cout << "lambda_hs = " << lambda_hs << std::endl;
@@ -123,18 +127,13 @@ class xSM_OSlike : public OneLoopPotential {
     const double c_s = (2. * lambda_hs + 3. * lambda_s) / 12.;
 
     // CP even Higgs thermal temperature masses
-    Eigen::MatrixXd MTH2 = Eigen::MatrixXd::Zero(2, 2); 
-    MTH2(0,0) = mhh2 + c_h * square(T);
-    MTH2(1,1) = mss2 + c_s * square(T);
-    // Mixing between Higgs and singlet
-    MTH2(0, 1) = MTH2(1, 0) = lambda_hs * h * s;
-    // get eigenvalues
-    const Eigen::VectorXd mH_sq = MTH2.eigenvalues().real();
-    // vector for all scalars, including two mass degenerate charged goldstones
-    std::vector<double> m_sq_vector{mH_sq(0), mH_sq(1)};
-    // mass order
-    std::sort(m_sq_vector.begin(), m_sq_vector.end());
-    return m_sq_vector;
+    const double a = mhh2 + c_h * square(T);
+    const double b = mss2 + c_s * square(T);
+    const double c = lambda_hs * h * s;
+    const double A = 0.5 * (a+b);
+    const double B = sqrt(0.25*square(a-b) + square(c));  
+    
+    return {A+B, A-B};
   }
   std::vector<double> get_scalar_masses_sq(Eigen::VectorXd phi, double xi) const override {
     return get_scalar_debye_sq(phi, xi, 0.);

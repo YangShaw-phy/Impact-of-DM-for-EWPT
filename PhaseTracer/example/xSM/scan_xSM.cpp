@@ -103,9 +103,9 @@ int main(int argc, char* argv[]) {
 
     if ( argc == 1 ) {
       LOGGER(debug);
-      double lambda_hs = 0.25;
-      double ms = 65;
-      double lambda_s =  0.1;
+      double lambda_hs = 1.06566;
+      double ms = 160.392;
+      double lambda_s =  0.948774;
       std::cout << "ms = " << ms << std::endl
                 << "lambda_s = " << lambda_s << std::endl
                 << "lambda_hs = " << lambda_hs << std::endl;
